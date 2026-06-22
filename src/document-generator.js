@@ -262,6 +262,14 @@ export async function generateDocument(data) {
 
   // === HEADER: Using a table for layout ===
   const headerTable = new Table({
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE },
+    },
     rows: [
       new TableRow({
         children: [
@@ -425,6 +433,14 @@ export async function generateDocument(data) {
   children.push(new Paragraph({ spacing: { before: 200 } }));
 
   const footerTable = new Table({
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE },
+    },
     rows: [
       new TableRow({
         children: [
