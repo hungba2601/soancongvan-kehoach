@@ -37,6 +37,10 @@ const btnBackType = $('#btn-back-type');
 const btnNextContent = $('#btn-next-content');
 const btnBackInfo = $('#btn-back-info');
 const btnNewDoc = $('#btn-new-doc');
+const btnThemeToggle = $('#btn-theme-toggle');
+const themeIconSun = $('#theme-icon-sun');
+const themeIconMoon = $('#theme-icon-moon');
+const themeToggleText = $('#theme-toggle-text');
 
 // Editor
 const btnUseRef = $('#btn-use-ref');
@@ -615,3 +619,31 @@ function resetAll() {
 
 // ===== INIT =====
 setDefaultDate();
+initTheme();
+
+// ===== THEME TOGGLE =====
+function initTheme() {
+  const savedTheme = localStorage.getItem('app-theme') || 'light';
+  setTheme(savedTheme);
+}
+
+function setTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    themeIconSun.classList.remove('hidden');
+    themeIconMoon.classList.add('hidden');
+    themeToggleText.textContent = 'Sáng';
+    localStorage.setItem('app-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    themeIconSun.classList.add('hidden');
+    themeIconMoon.classList.remove('hidden');
+    themeToggleText.textContent = 'Tối';
+    localStorage.setItem('app-theme', 'light');
+  }
+}
+
+btnThemeToggle.addEventListener('click', () => {
+  const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+});
