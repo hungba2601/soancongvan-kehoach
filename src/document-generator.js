@@ -251,9 +251,22 @@ export async function generateDocument(data) {
     noiNhan
   } = data;
 
-  const isKeHoach = type === 'kehoach';
-  const loaiVanBan = isKeHoach ? 'KẾ HOẠCH' : '';
-  const soKH = soVanBan ? `Số: ${soVanBan}/${kyHieu || (isKeHoach ? 'KH' : 'CV')}` : `Số:     /${kyHieu || (isKeHoach ? 'KH' : 'CV')}`;
+  const docTypeNames = {
+    congvan: 'Công văn',
+    kehoach: 'Kế hoạch',
+    thongbao: 'Thông báo',
+    quyetdinh: 'Quyết định',
+    totrinh: 'Tờ trình',
+    baocao: 'Báo cáo',
+    bienban: 'Biên bản'
+  };
+
+  const isCongVan = type === 'congvan';
+  const loaiVanBan = docTypeNames[type] ? docTypeNames[type].toUpperCase() : 'VĂN BẢN';
+  
+  const prefix = type.substring(0, 2).toUpperCase();
+  const kyHieuStr = kyHieu || prefix;
+  const soKH = soVanBan ? `Số: ${soVanBan}/${kyHieuStr}` : `Số:     /${kyHieuStr}`;
   const dateStr = formatDateVN(ngayThang);
   const diaDanhDate = `${diaDanh || '.........'}, ${dateStr}`;
 
@@ -365,7 +378,7 @@ export async function generateDocument(data) {
   children.push(new Paragraph({ spacing: { before: 200 } }));
 
   // === DOCUMENT TYPE & TITLE ===
-  if (isKeHoach) {
+  if (!isCongVan) {
     children.push(new Paragraph({
       children: [new TextRun({
         text: loaiVanBan,
@@ -390,6 +403,23 @@ export async function generateDocument(data) {
           text: '____________',
           font: FONT, size: FONT_SIZE,
         })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      }));
+    }
+    if (kinhGui) {
+      children.push(new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Kính gửi: ',
+            bold: true,
+            font: FONT, size: FONT_SIZE,
+          }),
+          new TextRun({
+            text: kinhGui,
+            font: FONT, size: FONT_SIZE,
+          }),
+        ],
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 },
       }));
@@ -543,9 +573,12 @@ export async function generateDocument(data) {
 
   // Generate and save
   const blob = await Packer.toBlob(doc);
-  const fileName = isKeHoach
-    ? `Ke_hoach_${(tenDonVi || 'vanban').replace(/\s+/g, '_')}.docx`
-    : `Cong_van_${(tenDonVi || 'vanban').replace(/\s+/g, '_')}.docx`;
+  
+  // Format filename
+  const rawFileName = docTypeNames[type] ? docTypeNames[type] : 'Van_ban';
+  const prefixName = rawFileName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+  
+  const fileName = `${prefixName}_${(tenDonVi || 'donvi').replace(/\s+/g, '_')}.docx`;
   saveAs(blob, fileName);
   return fileName;
 }

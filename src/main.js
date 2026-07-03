@@ -1,12 +1,15 @@
 import './style.css';
-import { readUploadedFile, formatFileSize } from './file-reader.js';
+import { readUploadedFile } from './file-reader.js';
 import { generateDocument } from './document-generator.js';
+import { generateDocumentContent } from './gemini-service.js';
 
 // ===== STATE =====
 const state = {
-  docType: null, // 'kehoach' or 'congvan'
+  docType: 'kehoach', // Default
   uploadedFile: null,
   fileContent: '',
+  currentStep: 1,
+  apiKey: localStorage.getItem('gemini-api-key') || '',
 };
 
 // ===== DOM ELEMENTS =====
@@ -14,53 +17,23 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 // Steps
-const stepType = $('#step-type');
-const stepInfo = $('#step-info');
-const stepEditor = $('#step-editor');
+const steps = [$('#step-1'), $('#step-2'), $('#step-3')];
+const stepItems = $$('.step-item');
+const btnNextStep1 = $('#btn-next-step1');
+const btnBackStep2 = $('#btn-back-step2');
+const btnGenerateAI = $('#btn-generate-ai');
+const btnBackStep3 = $('#btn-back-step3');
 
-// Type cards
-const cardKeHoach = $('#card-kehoach');
-const cardCongVan = $('#card-congvan');
+// API Key Modal
+const modalApiKey = $('#modal-api-key');
+const btnApiKey = $('#btn-api-key');
+const modalApiClose = $('#modal-api-close');
+const modalApiCancel = $('#modal-api-cancel');
+const modalApiSave = $('#modal-api-save');
+const inputApiKey = $('#input-api-key');
 
-// Upload
-const uploadZone = $('#upload-zone');
-const fileInput = $('#file-input');
-const fileInfo = $('#file-info');
-const fileName = $('#file-name');
-const fileSize = $('#file-size');
-const btnRemoveFile = $('#btn-remove-file');
-const fileContentPreview = $('#file-content-preview');
-const refContent = $('#ref-content');
-
-// Navigation
-const btnBackType = $('#btn-back-type');
-const btnNextContent = $('#btn-next-content');
-const btnBackInfo = $('#btn-back-info');
-const btnNewDoc = $('#btn-new-doc');
-const btnThemeToggle = $('#btn-theme-toggle');
-const themeIconSun = $('#theme-icon-sun');
-const themeIconMoon = $('#theme-icon-moon');
-const themeToggleText = $('#theme-toggle-text');
-
-// Editor
-const btnUseRef = $('#btn-use-ref');
-const btnSelectRef = $('#btn-select-ref');
-const btnFillNoiDung = $('#btn-fill-noiDung');
-const btnRefreshPreview = $('#btn-refresh-preview');
-const btnExport = $('#btn-export');
-const congvanFields = $('#congvan-fields');
-const previewDoc = $('#preview-doc');
-
-// Modal Elements
-const modalSelectContent = $('#modal-select-content');
-const modalBtnClose = $('#modal-btn-close');
-const modalBtnCancel = $('#modal-btn-cancel');
-const modalBtnApply = $('#modal-btn-apply');
-const modalBtnSelectAll = $('#modal-btn-select-all');
-const modalBtnDeselectAll = $('#modal-btn-deselect-all');
-const modalParagraphsList = $('#modal-paragraphs-list');
-
-// Form inputs
+// Inputs Step 1
+const inputDocType = $('#input-docType');
 const inputCoQuanCapTren = $('#input-coquan-capTren');
 const inputTenDonVi = $('#input-tenDonVi');
 const inputSoVanBan = $('#input-soVanBan');
@@ -69,10 +42,34 @@ const inputDiaDanh = $('#input-diaDanh');
 const inputNgayThang = $('#input-ngayThang');
 const inputChucVu = $('#input-chucVu');
 const inputThuTruong = $('#input-thuTruong');
+const inputNoiNhan = $('#input-noiNhan');
+const btnFillNoiNhan = $('#btn-fill-noiNhan');
+const congvanFields = $('#congvan-fields');
+
+// Inputs Step 2
 const inputTrichYeu = $('#input-trichYeu');
 const inputKinhGui = $('#input-kinhGui');
+const uploadZone = $('#upload-zone');
+const fileInput = $('#file-input');
+const fileInfo = $('#file-info');
+const fileName = $('#file-name');
+const btnRemoveFile = $('#btn-remove-file');
+const inputYeuCauAI = $('#input-yeuCauAI');
+
+// Inputs Step 3
 const inputNoiDung = $('#input-noiDung');
-const inputNoiNhan = $('#input-noiNhan');
+const btnFillNoiDung = $('#btn-fill-noiDung');
+const btnCopy = $('#btn-copy');
+const btnExport = $('#btn-export');
+
+// Preview
+const previewDoc = $('#preview-doc');
+const btnRefreshPreview = $('#btn-refresh-preview');
+
+// Theme
+const btnThemeToggle = $('#btn-theme-toggle');
+const themeIconSun = $('#theme-icon-sun');
+const themeIconMoon = $('#theme-icon-moon');
 
 // ===== UTILITIES =====
 function showToast(message, type = 'info') {
@@ -84,15 +81,8 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(40px)';
-    toast.style.transition = '0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
-}
-
-function switchStep(activeStep) {
-  [stepType, stepInfo, stepEditor].forEach(s => s.classList.remove('active'));
-  activeStep.classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setDefaultDate() {
@@ -103,56 +93,93 @@ function setDefaultDate() {
   inputNgayThang.value = `${yyyy}-${mm}-${dd}`;
 }
 
-// ===== STEP 1: TYPE SELECTION =====
-function selectType(type) {
-  state.docType = type;
-  cardKeHoach.classList.toggle('selected', type === 'kehoach');
-  cardCongVan.classList.toggle('selected', type === 'congvan');
+// ===== WIZARD NAVIGATION =====
+function goToStep(step) {
+  state.currentStep = step;
+  
+  // Update UI Panels
+  steps.forEach((s, index) => {
+    if (index + 1 === step) {
+      s.classList.add('active');
+    } else {
+      s.classList.remove('active');
+    }
+  });
 
-  // Update titles
-  const typeName = type === 'kehoach' ? 'Kế Hoạch' : 'Công Văn';
-  $('#step2-title').textContent = `Thông tin ${typeName}`;
-  $('#step3-title').textContent = `Soạn nội dung ${typeName}`;
+  // Update Indicator
+  stepItems.forEach((item) => {
+    const s = parseInt(item.dataset.step);
+    if (s === step) {
+      item.classList.add('active');
+      item.classList.remove('completed');
+    } else if (s < step) {
+      item.classList.remove('active');
+      item.classList.add('completed');
+    } else {
+      item.classList.remove('active');
+      item.classList.remove('completed');
+    }
+  });
 
-  // Update ký hiệu placeholder
-  inputKyHieu.placeholder = type === 'kehoach' ? 'VD: KH-SGDĐT' : 'VD: CV-SGDĐT';
-
-  // Show/hide Công văn specific fields
-  congvanFields.classList.toggle('hidden', type !== 'congvan');
-
-  // Update placeholder for nội dung
-  if (type === 'kehoach') {
-    inputNoiDung.placeholder = 'Nhập nội dung kế hoạch tại đây...\n\nGợi ý cấu trúc:\nI. MỤC ĐÍCH, YÊU CẦU\n1. Mục đích\n2. Yêu cầu\n\nII. NỘI DUNG\n\nIII. TỔ CHỨC THỰC HIỆN';
-  } else {
-    inputNoiDung.placeholder = 'Nhập nội dung công văn tại đây...\n\nVD: Thực hiện chỉ đạo của..., Sở Giáo dục và Đào tạo đề nghị các đơn vị...';
-  }
-
-  setTimeout(() => switchStep(stepInfo), 200);
+  updatePreview();
 }
 
-cardKeHoach.addEventListener('click', () => selectType('kehoach'));
-cardCongVan.addEventListener('click', () => selectType('congvan'));
+btnNextStep1.addEventListener('click', () => {
+  if (!inputTenDonVi.value.trim()) {
+    showToast('Vui lòng nhập Tên đơn vị ban hành', 'error');
+    inputTenDonVi.focus();
+    return;
+  }
+  goToStep(2);
+});
 
-// ===== STEP 2: UPLOAD & INFO =====
-// Upload zone handlers
+btnBackStep2.addEventListener('click', () => goToStep(1));
+btnBackStep3.addEventListener('click', () => goToStep(2));
+
+// ===== STEP 1 LOGIC =====
+const docTypeNames = {
+  congvan: 'Công văn',
+  kehoach: 'Kế hoạch',
+  thongbao: 'Thông báo',
+  quyetdinh: 'Quyết định',
+  totrinh: 'Tờ trình',
+  baocao: 'Báo cáo',
+  bienban: 'Biên bản'
+};
+
+inputDocType.addEventListener('change', (e) => {
+  state.docType = e.target.value;
+  
+  // Set default Ky Hieu placeholder
+  const prefix = state.docType.substring(0, 2).toUpperCase();
+  inputKyHieu.placeholder = `VD: ${prefix}-SGDĐT`;
+  
+  // Kính gửi thường dùng cho công văn, tờ trình, báo cáo
+  const hasKinhGui = ['congvan', 'totrinh', 'baocao'].includes(state.docType);
+  congvanFields.classList.toggle('hidden', !hasKinhGui);
+  
+  updatePreview();
+});
+
+const noiNhanTemplates = {
+  kehoach: `- Như trên;\n- UBND tỉnh (để b/c);\n- Các phòng, ban liên quan;\n- Lưu: VT, VP.`,
+  congvan: `- Như trên;\n- Ban Giám đốc (để b/c);\n- Các phòng chuyên môn;\n- Lưu: VT, VP.`
+};
+
+btnFillNoiNhan.addEventListener('click', () => {
+  inputNoiNhan.value = noiNhanTemplates[state.docType];
+  updatePreview();
+});
+
+// ===== STEP 2 LOGIC (UPLOAD & AI) =====
 uploadZone.addEventListener('click', () => fileInput.click());
-
-uploadZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  uploadZone.classList.add('dragover');
-});
-
-uploadZone.addEventListener('dragleave', () => {
-  uploadZone.classList.remove('dragover');
-});
-
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; });
+uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = 'var(--border)'; });
 uploadZone.addEventListener('drop', (e) => {
   e.preventDefault();
-  uploadZone.classList.remove('dragover');
-  const files = e.dataTransfer.files;
-  if (files.length > 0) handleFile(files[0]);
+  uploadZone.style.borderColor = 'var(--border)';
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
 });
-
 fileInput.addEventListener('change', (e) => {
   if (e.target.files.length > 0) handleFile(e.target.files[0]);
 });
@@ -160,246 +187,121 @@ fileInput.addEventListener('change', (e) => {
 async function handleFile(file) {
   state.uploadedFile = file;
   fileName.textContent = file.name;
-  fileSize.textContent = formatFileSize(file.size);
   uploadZone.classList.add('hidden');
   fileInfo.classList.remove('hidden');
 
   try {
-    showToast('Đang đọc file...', 'info');
+    showToast('Đang đọc file tham khảo...', 'info');
     const content = await readUploadedFile(file);
     state.fileContent = content;
-    refContent.textContent = content.substring(0, 2000) + (content.length > 2000 ? '\n\n... (nội dung đã được rút gọn)' : '');
-    fileContentPreview.classList.remove('hidden');
     showToast('Đã đọc file thành công!', 'success');
   } catch (err) {
     showToast('Lỗi: ' + err.message, 'error');
-    state.fileContent = '';
+    removeFile();
   }
 }
 
-btnRemoveFile.addEventListener('click', () => {
+function removeFile() {
   state.uploadedFile = null;
   state.fileContent = '';
   fileInput.value = '';
   uploadZone.classList.remove('hidden');
   fileInfo.classList.add('hidden');
-  fileContentPreview.classList.add('hidden');
-});
+}
+btnRemoveFile.addEventListener('click', removeFile);
 
-// Navigation
-btnBackType.addEventListener('click', () => switchStep(stepType));
-
-btnNextContent.addEventListener('click', () => {
-  if (!inputTenDonVi.value.trim()) {
-    showToast('Vui lòng nhập tên đơn vị ban hành', 'error');
-    inputTenDonVi.focus();
-    return;
-  }
-  switchStep(stepEditor);
-  updatePreview();
-});
-
-btnBackInfo.addEventListener('click', () => switchStep(stepInfo));
-
-btnNewDoc.addEventListener('click', () => {
-  if (confirm('Bạn có chắc muốn tạo văn bản mới? Dữ liệu hiện tại sẽ bị xóa.')) {
-    resetAll();
-  }
-});
-
-// ===== STEP 3: EDITOR =====
-// Fill template for "Nơi nhận"
-const btnFillNoiNhan = $('#btn-fill-noiNhan');
-
-const noiNhanTemplates = {
-  kehoach: `- Như trên;
-- UBND tỉnh (để b/c);
-- Các phòng, ban liên quan;
-- Lưu: VT, VP.`,
-  congvan: `- Như trên;
-- Ban Giám đốc (để b/c);
-- Các phòng chuyên môn;
-- Lưu: VT, VP.`
-};
-
-btnFillNoiNhan.addEventListener('click', () => {
-  const template = noiNhanTemplates[state.docType] || noiNhanTemplates.congvan;
-  if (inputNoiNhan.value.trim() && !confirm('Nội dung nơi nhận hiện tại sẽ được thay thế bằng mẫu. Tiếp tục?')) return;
-  inputNoiNhan.value = template;
-  inputNoiNhan.focus();
-  showToast('Đã điền mẫu nơi nhận. Bạn có thể chỉnh sửa lại.', 'success');
-  updatePreview();
-});
-
-// Fill template for "Nội dung chính"
-const noiDungTemplates = {
-  kehoach: `I. MỤC ĐÍCH, YÊU CẦU
-1. Mục đích
-- Nhằm triển khai thực hiện có hiệu quả các nội dung đề ra.
-- Tăng cường trách nhiệm của các cơ quan, đơn vị có liên quan.
-2. Yêu cầu
-- Việc thực hiện phải đảm bảo thiết thực, tiết kiệm, tránh hình thức.
-- Có sự phối hợp chặt chẽ, đồng bộ giữa các đơn vị liên quan.
-
-II. NỘI DUNG VÀ BIỆN PHÁP THỰC HIỆN
-1. Công tác tuyên truyền, phổ biến quán triệt các văn bản chỉ đạo.
-2. Tổ chức triển khai thực hiện các nhiệm vụ chuyên môn theo đúng tiến độ.
-3. Tăng cường kiểm tra, đánh giá kết quả thực hiện.
-
-III. TỔ CHỨC THỰC HIỆN
-1. Trưởng các bộ phận thuộc đơn vị có trách nhiệm phổ biến và triển khai thực hiện kế hoạch này.
-2. Giao văn phòng đơn vị tổng hợp kết quả, báo cáo lãnh đạo theo quy định.`,
-
-  congvan: `Thực hiện chỉ đạo của cấp trên về việc triển khai nhiệm vụ chuyên môn, đơn vị yêu cầu các bộ phận trực thuộc thực hiện một số nội dung sau:
-
-1. Nghiên cứu kỹ nội dung hướng dẫn của cơ quan cấp trên và phổ biến quán triệt sâu rộng đến toàn thể cán bộ, công chức, viên chức.
-
-2. Xây dựng kế hoạch chi tiết để cụ thể hóa các mục tiêu, nhiệm vụ được giao, đảm bảo đúng tiến độ và đạt hiệu quả cao nhất.
-
-3. Báo cáo tình hình và kết quả thực hiện gửi về Văn phòng tổng hợp trước ngày quy định để báo cáo cấp trên.
-
-Trong quá trình thực hiện, nếu có khó khăn, vướng mắc phát sinh, các đơn vị kịp thời phản ánh về Văn phòng để tổng hợp, báo cáo Ban Lãnh đạo xem xét giải quyết./.`
-};
-
-btnFillNoiDung.addEventListener('click', () => {
-  const template = noiDungTemplates[state.docType] || noiDungTemplates.congvan;
-  if (inputNoiDung.value.trim() && !confirm('Nội dung chính hiện tại sẽ được thay thế bằng mẫu chuẩn. Tiếp tục?')) return;
-  inputNoiDung.value = template;
-  inputNoiDung.focus();
-  showToast('Đã điền mẫu nội dung chính. Bạn có thể chỉnh sửa lại.', 'success');
-  updatePreview();
-});
-
-btnUseRef.addEventListener('click', () => {
-  if (!state.fileContent) {
-    showToast('Chưa có file tham khảo nào được upload', 'error');
-    return;
-  }
-  if (inputNoiDung.value.trim() && !confirm('Nội dung hiện tại sẽ được thay thế bằng toàn bộ nội dung file tham khảo. Tiếp tục?')) return;
-  inputNoiDung.value = state.fileContent;
-  showToast('Đã sử dụng toàn bộ nội dung từ file tham khảo', 'success');
-  updatePreview();
-});
-
-// Selective Import Modal Logic
-let paragraphsToSelect = [];
-
-btnSelectRef.addEventListener('click', () => {
-  if (!state.fileContent) {
-    showToast('Vui lòng upload file tham khảo trước ở Bước 2!', 'error');
+// AI GENERATION
+btnGenerateAI.addEventListener('click', async () => {
+  if (!state.apiKey) {
+    showToast('Vui lòng Cấu hình API Key để sử dụng AI', 'error');
+    modalApiKey.classList.remove('hidden');
     return;
   }
   
-  // Split content into paragraphs
-  paragraphsToSelect = state.fileContent.split('\n')
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
-
-  if (paragraphsToSelect.length === 0) {
-    showToast('File tham khảo không có nội dung văn bản để trích xuất', 'error');
+  const trichYeu = inputTrichYeu.value.trim();
+  if (!trichYeu) {
+    showToast('Vui lòng nhập Trích yếu nội dung', 'error');
+    inputTrichYeu.focus();
     return;
   }
 
-  // Populate list
-  modalParagraphsList.innerHTML = '';
-  paragraphsToSelect.forEach((text, index) => {
-    const item = document.createElement('div');
-    item.className = 'paragraph-item selected'; // Selected by default
-    item.dataset.index = index;
-    item.innerHTML = `
-      <input type="checkbox" id="para-chk-${index}" checked />
-      <label class="paragraph-text" for="para-chk-${index}">${escapeHtml(text)}</label>
-    `;
+  const yeuCau = inputYeuCauAI.value.trim();
+  const model = 'gemini-2.5-flash';
+  const docTypeName = docTypeNames[state.docType];
+
+  try {
+    btnGenerateAI.disabled = true;
+    btnGenerateAI.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Đang sinh nội dung...`;
     
-    // Toggle check on container click (but avoid double toggle if clicking checkbox/label itself)
-    item.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
-        const chk = item.querySelector('input');
-        chk.checked = !chk.checked;
-        item.classList.toggle('selected', chk.checked);
-      }
-    });
-    
-    // Toggle class on input change
-    item.querySelector('input').addEventListener('change', (e) => {
-      item.classList.toggle('selected', e.target.checked);
+    const text = await generateDocumentContent(state.apiKey, model, {
+      trichYeu, yeuCau, refContent: state.fileContent, docTypeName
     });
 
-    modalParagraphsList.appendChild(item);
-  });
-
-  // Open modal
-  modalSelectContent.classList.remove('hidden');
-});
-
-// Close modal handlers
-function closeModal() {
-  modalSelectContent.classList.add('hidden');
-}
-
-modalBtnClose.addEventListener('click', closeModal);
-modalBtnCancel.addEventListener('click', closeModal);
-modalSelectContent.addEventListener('click', (e) => {
-  if (e.target === modalSelectContent) closeModal();
-});
-
-// Select All / Deselect All
-modalBtnSelectAll.addEventListener('click', () => {
-  $$('.paragraph-item').forEach(item => {
-    item.classList.add('selected');
-    item.querySelector('input').checked = true;
-  });
-});
-
-modalBtnDeselectAll.addEventListener('click', () => {
-  $$('.paragraph-item').forEach(item => {
-    item.classList.remove('selected');
-    item.querySelector('input').checked = false;
-  });
-});
-
-// Apply selected content
-modalBtnApply.addEventListener('click', () => {
-  const selectedTexts = [];
-  $$('.paragraph-item').forEach(item => {
-    const chk = item.querySelector('input');
-    if (chk.checked) {
-      const idx = parseInt(item.dataset.index);
-      selectedTexts.push(paragraphsToSelect[idx]);
-    }
-  });
-
-  if (selectedTexts.length === 0) {
-    showToast('Vui lòng chọn ít nhất một đoạn nội dung!', 'error');
-    return;
+    inputNoiDung.value = text;
+    showToast('Đã tạo nội dung thành công!', 'success');
+    goToStep(3);
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btnGenerateAI.disabled = false;
+    btnGenerateAI.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Tạo nội dung AI`;
   }
+});
 
-  if (inputNoiDung.value.trim() && !confirm('Nội dung chính hiện tại sẽ được thay thế bằng các phần đã chọn. Tiếp tục?')) return;
+// ===== STEP 3 LOGIC (EDITOR & EXPORT) =====
+const noiDungTemplates = {
+  kehoach: `I. MỤC ĐÍCH, YÊU CẦU\n1. Mục đích\n- Nhằm triển khai...\n2. Yêu cầu\n- Đảm bảo thiết thực...\n\nII. NỘI DUNG\n1. Công tác tuyên truyền\n2. Tổ chức thực hiện\n\nIII. TỔ CHỨC THỰC HIỆN\n1. Giao bộ phận...`,
+  congvan: `Thực hiện chỉ đạo của..., đơn vị yêu cầu các bộ phận thực hiện một số nội dung sau:\n\n1. Nghiên cứu kỹ nội dung...\n\n2. Báo cáo tình hình...\n\nTrong quá trình thực hiện, nếu có vướng mắc báo cáo kịp thời./.`
+};
 
-  inputNoiDung.value = selectedTexts.join('\n\n');
-  showToast(`Đã trích xuất ${selectedTexts.length} đoạn nội dung!`, 'success');
-  closeModal();
+btnFillNoiDung.addEventListener('click', () => {
+  if (inputNoiDung.value.trim() && !confirm('Thay thế nội dung hiện tại bằng Form mẫu?')) return;
+  inputNoiDung.value = noiDungTemplates[state.docType];
   updatePreview();
 });
 
-// Auto-update preview on input change
-const previewInputs = [
-  inputCoQuanCapTren, inputTenDonVi, inputSoVanBan, inputKyHieu,
-  inputDiaDanh, inputNgayThang, inputChucVu, inputThuTruong,
-  inputTrichYeu, inputKinhGui, inputNoiDung, inputNoiNhan
-];
-
-let previewTimeout;
-previewInputs.forEach(input => {
-  input.addEventListener('input', () => {
-    clearTimeout(previewTimeout);
-    previewTimeout = setTimeout(updatePreview, 400);
-  });
+btnCopy.addEventListener('click', () => {
+  navigator.clipboard.writeText(inputNoiDung.value);
+  showToast('Đã copy nội dung vào Clipboard!', 'success');
 });
 
-btnRefreshPreview.addEventListener('click', updatePreview);
+btnExport.addEventListener('click', async () => {
+  if (!inputTenDonVi.value.trim()) return showToast('Thiếu tên đơn vị', 'error');
+  if (!inputNoiDung.value.trim()) return showToast('Nội dung đang trống', 'error');
 
-// ===== PREVIEW =====
+  try {
+    btnExport.disabled = true;
+    const data = {
+      type: state.docType,
+      coQuanCapTren: inputCoQuanCapTren.value.trim(),
+      tenDonVi: inputTenDonVi.value.trim(),
+      soVanBan: inputSoVanBan.value.trim(),
+      kyHieu: inputKyHieu.value.trim(),
+      diaDanh: inputDiaDanh.value.trim(),
+      ngayThang: inputNgayThang.value,
+      chucVu: inputChucVu.value.trim(),
+      thuTruong: inputThuTruong.value.trim(),
+      trichYeu: inputTrichYeu.value.trim(),
+      kinhGui: inputKinhGui.value.trim(),
+      noiDung: inputNoiDung.value.trim(),
+      noiNhan: inputNoiNhan.value.trim(),
+    };
+    const savedFileName = await generateDocument(data);
+    showToast(`Đã xuất file: ${savedFileName}`, 'success');
+  } catch (err) {
+    showToast('Lỗi xuất file: ' + err.message, 'error');
+  } finally {
+    btnExport.disabled = false;
+  }
+});
+
+// ===== PREVIEW LOGIC =====
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function formatDateVNPreview(dateStr) {
   if (!dateStr) {
     const now = new Date();
@@ -409,18 +311,9 @@ function formatDateVNPreview(dateStr) {
   return `ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`;
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-/**
- * Smart content renderer for preview - joins continuation lines into paragraphs
- */
 function renderContentPreview(text) {
   if (!text || !text.trim()) {
-    return '<div class="doc-noiDung"><p style="color:#999;font-style:italic">Nhập nội dung...</p></div>';
+    return '<div class="doc-noiDung"><p style="color:#999;font-style:italic">Nội dung văn bản...</p></div>';
   }
 
   const lines = text.split('\n');
@@ -473,11 +366,16 @@ function renderContentPreview(text) {
 }
 
 function updatePreview() {
-  const isKH = state.docType === 'kehoach';
+  const isCongVan = state.docType === 'congvan';
+  const docTypeName = docTypeNames[state.docType];
+  
   const coQuan = inputCoQuanCapTren.value.trim();
   const donVi = inputTenDonVi.value.trim();
   const soVB = inputSoVanBan.value.trim();
-  const kyHieu = inputKyHieu.value.trim() || (isKH ? 'KH' : 'CV');
+  
+  const prefix = state.docType.substring(0, 2).toUpperCase();
+  const kyHieu = inputKyHieu.value.trim() || prefix;
+  
   const diaDanh = inputDiaDanh.value.trim();
   const ngayThang = inputNgayThang.value;
   const chucVu = inputChucVu.value.trim();
@@ -507,19 +405,21 @@ function updatePreview() {
     </div>
   `;
 
-  if (isKH) {
+  if (!isCongVan) {
     html += `
-      <div class="doc-tenLoai">KẾ HOẠCH</div>
+      <div class="doc-tenLoai">${docTypeName.toUpperCase()}</div>
       ${trichYeu ? `<div class="doc-trichYeu">${escapeHtml(trichYeu)}</div>` : ''}
     `;
+    // Thêm kính gửi nếu có nhập (cho tờ trình, báo cáo)
+    if (kinhGui) {
+      html += `<div class="doc-kinhGui">Kính gửi: ${escapeHtml(kinhGui)}</div>`;
+    }
   } else {
     html += trichYeu ? `<div class="doc-trichYeu-cv">V/v ${escapeHtml(trichYeu)}</div>` : '';
     html += kinhGui ? `<div class="doc-kinhGui">Kính gửi: ${escapeHtml(kinhGui)}</div>` : '';
   }
 
-  // Render content as properly formatted paragraphs
   html += renderContentPreview(noiDung);
-
 
   html += `
     <div class="doc-footer">
@@ -537,89 +437,37 @@ function updatePreview() {
   previewDoc.innerHTML = html;
 }
 
-// ===== EXPORT =====
-btnExport.addEventListener('click', async () => {
-  const trichYeu = inputTrichYeu.value.trim();
-  const noiDung = inputNoiDung.value.trim();
-  const tenDonVi = inputTenDonVi.value.trim();
+// Auto update preview on all inputs
+const allInputs = [
+  inputCoQuanCapTren, inputTenDonVi, inputSoVanBan, inputKyHieu, inputDiaDanh, inputNgayThang,
+  inputChucVu, inputThuTruong, inputTrichYeu, inputKinhGui, inputNoiDung, inputNoiNhan
+];
+allInputs.forEach(i => i.addEventListener('input', () => updatePreview()));
+btnRefreshPreview.addEventListener('click', updatePreview);
 
-  if (!tenDonVi) {
-    showToast('Vui lòng nhập tên đơn vị', 'error');
-    return;
-  }
-  if (!noiDung) {
-    showToast('Vui lòng nhập nội dung văn bản', 'error');
-    return;
-  }
 
-  try {
-    btnExport.disabled = true;
-    btnExport.textContent = '⏳ Đang tạo file...';
+// ===== API KEY MODAL =====
+btnApiKey.addEventListener('click', () => {
+  inputApiKey.value = state.apiKey;
+  modalApiKey.classList.remove('hidden');
+});
 
-    const data = {
-      type: state.docType,
-      coQuanCapTren: inputCoQuanCapTren.value.trim(),
-      tenDonVi,
-      soVanBan: inputSoVanBan.value.trim(),
-      kyHieu: inputKyHieu.value.trim(),
-      diaDanh: inputDiaDanh.value.trim(),
-      ngayThang: inputNgayThang.value,
-      chucVu: inputChucVu.value.trim(),
-      thuTruong: inputThuTruong.value.trim(),
-      trichYeu,
-      kinhGui: inputKinhGui.value.trim(),
-      noiDung,
-      noiNhan: inputNoiNhan.value.trim(),
-    };
+function closeApiModal() { modalApiKey.classList.add('hidden'); }
+modalApiClose.addEventListener('click', closeApiModal);
+modalApiCancel.addEventListener('click', closeApiModal);
 
-    const savedFileName = await generateDocument(data);
-    showToast(`Đã xuất file: ${savedFileName}`, 'success');
-  } catch (err) {
-    showToast('Lỗi khi tạo file: ' + err.message, 'error');
-    console.error(err);
-  } finally {
-    btnExport.disabled = false;
-    btnExport.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      Xuất file Word (.docx)
-    `;
+modalApiSave.addEventListener('click', () => {
+  const key = inputApiKey.value.trim();
+  if (key) {
+    localStorage.setItem('gemini-api-key', key);
+    state.apiKey = key;
+    showToast('Đã lưu cấu hình API Key', 'success');
+    closeApiModal();
+  } else {
+    showToast('Vui lòng nhập API Key hợp lệ', 'error');
   }
 });
 
-// ===== RESET =====
-function resetAll() {
-  state.docType = null;
-  state.uploadedFile = null;
-  state.fileContent = '';
-  fileInput.value = '';
-
-  // Reset form
-  previewInputs.forEach(input => { input.value = ''; });
-  setDefaultDate();
-
-  // Reset UI
-  cardKeHoach.classList.remove('selected');
-  cardCongVan.classList.remove('selected');
-  uploadZone.classList.remove('hidden');
-  fileInfo.classList.add('hidden');
-  fileContentPreview.classList.add('hidden');
-  congvanFields.classList.add('hidden');
-
-  previewDoc.innerHTML = `
-    <div class="preview-placeholder">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/>
-      </svg>
-      <p>Nhập nội dung để xem trước</p>
-    </div>
-  `;
-
-  switchStep(stepType);
-}
-
-// ===== INIT =====
-setDefaultDate();
-initTheme();
 
 // ===== THEME TOGGLE =====
 function initTheme() {
@@ -632,13 +480,11 @@ function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', 'dark');
     themeIconSun.classList.remove('hidden');
     themeIconMoon.classList.add('hidden');
-    themeToggleText.textContent = 'Sáng';
     localStorage.setItem('app-theme', 'dark');
   } else {
     document.documentElement.removeAttribute('data-theme');
     themeIconSun.classList.add('hidden');
     themeIconMoon.classList.remove('hidden');
-    themeToggleText.textContent = 'Tối';
     localStorage.setItem('app-theme', 'light');
   }
 }
@@ -647,3 +493,8 @@ btnThemeToggle.addEventListener('click', () => {
   const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   setTheme(currentTheme === 'dark' ? 'light' : 'dark');
 });
+
+// ===== INIT =====
+setDefaultDate();
+initTheme();
+goToStep(1); // Start at step 1
