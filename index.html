@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Soạn Công Văn & Kế Hoạch - Theo Chuẩn NĐ 30/2020</title>
-  <meta name="description" content="Ứng dụng soạn thảo công văn, kế hoạch theo đúng chuẩn Nghị định 30/2020/NĐ-CP. Hỗ trợ upload file tham khảo và xuất file Word." />
+  <title>Trợ Lý Soạn Thảo Văn Bản AI - NĐ 30/2020</title>
+  <meta name="description" content="Ứng dụng soạn thảo công văn, kế hoạch tự động bằng AI, chuẩn Nghị định 30/2020/NĐ-CP." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
 </head>
 <body>
   <div id="app">
@@ -29,342 +29,272 @@
             </svg>
           </div>
           <div class="logo-text">
-            <h1>Soạn Văn Bản</h1>
-            <span class="logo-subtitle">Theo chuẩn NĐ 30/2020/NĐ-CP</span>
+            <h1>Soạn Thảo AI</h1>
+            <span class="logo-subtitle">Trợ lý ảo chuẩn NĐ 30/2020</span>
           </div>
         </div>
-        <div class="header-actions" style="display: flex; gap: 8px;">
-          <button id="btn-theme-toggle" class="btn btn-ghost" title="Chuyển chế độ sáng/tối">
+        <div class="header-actions">
+          <button id="btn-api-key" class="btn btn-outline btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            Cấu hình API Key
+          </button>
+          <button id="btn-theme-toggle" class="btn btn-ghost btn-icon" title="Chuyển chế độ sáng/tối">
             <svg id="theme-icon-sun" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.22" x2="5.64" y2="17.78"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             <svg id="theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            <span id="theme-toggle-text">Tối</span>
-          </button>
-          <button id="btn-new-doc" class="btn btn-ghost" title="Tạo mới">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Tạo mới
           </button>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
-    <main id="main-content">
-      <!-- Step 1: Choose Document Type -->
-      <section id="step-type" class="step active">
-        <div class="step-container">
-          <div class="step-header">
-            <div class="step-badge">Bước 1</div>
-            <h2>Chọn loại văn bản cần soạn</h2>
-            <p class="step-desc">Chọn loại văn bản phù hợp với nhu cầu của đơn vị bạn</p>
+    <!-- Main Layout (Split Pane) -->
+    <main class="split-layout">
+      <!-- Left Panel: Wizard -->
+      <div class="wizard-panel">
+        
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+          <div class="step-item active" data-step="1">
+            <div class="step-circle">1</div>
+            <span>Thiết lập</span>
           </div>
-          <div class="type-cards">
-            <div class="type-card" id="card-kehoach" data-type="kehoach">
-              <div class="type-card-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="22" fill="url(#gKH)" opacity="0.15"/>
-                  <path d="M16 14h16v20H16z" fill="url(#gKH)" rx="2"/>
-                  <path d="M20 22l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M20 28h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
-                  <defs>
-                    <linearGradient id="gKH" x1="16" y1="14" x2="32" y2="34">
-                      <stop stop-color="#10b981"/>
-                      <stop offset="1" stop-color="#059669"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-              <h3>Kế Hoạch</h3>
-              <p>Soạn kế hoạch công tác, kế hoạch triển khai theo đúng thể thức văn bản hành chính</p>
-              <div class="type-card-features">
-                <span>✓ Quốc hiệu, tiêu ngữ</span>
-                <span>✓ Số, ký hiệu</span>
-                <span>✓ Trích yếu nội dung</span>
-              </div>
-            </div>
-            <div class="type-card" id="card-congvan" data-type="congvan">
-              <div class="type-card-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="22" fill="url(#gCV)" opacity="0.15"/>
-                  <path d="M14 16h20v16H14z" fill="url(#gCV)" rx="2"/>
-                  <path d="M18 22h12M18 26h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M24 14l10 6-10 6-10-6z" fill="url(#gCV)" opacity="0.5"/>
-                  <defs>
-                    <linearGradient id="gCV" x1="14" y1="14" x2="34" y2="34">
-                      <stop stop-color="#0ea5e9"/>
-                      <stop offset="1" stop-color="#10b981"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-              <h3>Công Văn</h3>
-              <p>Soạn công văn đi, công văn trao đổi, đề nghị theo đúng quy định hiện hành</p>
-              <div class="type-card-features">
-                <span>✓ Đúng thể thức</span>
-                <span>✓ Nơi nhận đầy đủ</span>
-                <span>✓ Xuất file Word</span>
-              </div>
-            </div>
+          <div class="step-line"></div>
+          <div class="step-item" data-step="2">
+            <div class="step-circle">2</div>
+            <span>Nội dung AI</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" data-step="3">
+            <div class="step-circle">3</div>
+            <span>Tinh chỉnh</span>
           </div>
         </div>
-      </section>
 
-      <!-- Step 2: Upload & Info -->
-      <section id="step-info" class="step">
-        <div class="step-container">
-          <div class="step-header">
-            <button id="btn-back-type" class="btn-back">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Quay lại
-            </button>
-            <div class="step-badge">Bước 2</div>
-            <h2 id="step2-title">Thông tin văn bản</h2>
-            <p class="step-desc">Upload file tham khảo và nhập thông tin đơn vị</p>
+        <div class="wizard-content">
+          <!-- Step 1: Configuration -->
+          <div id="step-1" class="step-pane active">
+            <div class="card">
+              <div class="card-header">
+                <h3>Văn bản ban hành</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label>Loại văn bản <span class="required">*</span></label>
+                  <select id="input-docType" required>
+                    <option value="congvan">Công văn</option>
+                    <option value="kehoach">Kế hoạch</option>
+                    <option value="thongbao">Thông báo</option>
+                    <option value="quyetdinh">Quyết định</option>
+                    <option value="totrinh">Tờ trình</option>
+                    <option value="baocao">Báo cáo</option>
+                    <option value="bienban">Biên bản</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Cơ quan chủ quản (cấp trên)</label>
+                  <input type="text" id="input-coquan-capTren" placeholder="VD: UBND TỈNH BÀ RỊA - VŨNG TÀU" />
+                </div>
+                <div class="form-group">
+                  <label>Tên đơn vị ban hành <span class="required">*</span></label>
+                  <input type="text" id="input-tenDonVi" placeholder="VD: SỞ GIÁO DỤC VÀ ĐÀO TẠO" required />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Số văn bản</label>
+                    <input type="text" id="input-soVanBan" placeholder="VD: 123" />
+                  </div>
+                  <div class="form-group">
+                    <label>Ký hiệu</label>
+                    <input type="text" id="input-kyHieu" placeholder="VD: KH-SGDĐT" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Địa danh</label>
+                    <input type="text" id="input-diaDanh" placeholder="VD: Bà Rịa - Vũng Tàu" />
+                  </div>
+                  <div class="form-group">
+                    <label>Ngày ban hành</label>
+                    <input type="date" id="input-ngayThang" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Người ký & Nơi nhận</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Chức vụ người ký</label>
+                    <input type="text" id="input-chucVu" placeholder="VD: GIÁM ĐỐC" />
+                  </div>
+                  <div class="form-group">
+                    <label>Họ và tên thủ trưởng <span class="required">*</span></label>
+                    <input type="text" id="input-thuTruong" placeholder="VD: Nguyễn Văn A" required />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="label-with-action">
+                    <label>Nơi nhận</label>
+                    <button id="btn-fill-noiNhan" class="btn btn-sm btn-outline btn-fill-template">Điền mẫu</button>
+                  </div>
+                  <textarea id="input-noiNhan" rows="3" placeholder="- Như trên;&#10;- Lưu: VT."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions-footer">
+              <button id="btn-next-step1" class="btn btn-primary">
+                Tiếp tục: Nhập nội dung AI
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
           </div>
 
-          <div class="info-layout">
-            <!-- Left: Upload & Reference -->
-            <div class="info-left">
-              <div class="card">
-                <div class="card-header">
-                  <h3>📎 Upload file tham khảo</h3>
-                  <span class="badge badge-optional">Không bắt buộc</span>
+          <!-- Step 2: AI Prompting -->
+          <div id="step-2" class="step-pane">
+            <div class="card">
+              <div class="card-header">
+                <h3>Nguồn dữ liệu đầu vào</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label>Trích yếu nội dung (Chủ đề) <span class="required">*</span></label>
+                  <input type="text" id="input-trichYeu" placeholder="VD: V/v triển khai công tác phòng chống dịch bệnh năm 2026" required />
                 </div>
-                <div class="card-body">
+                <div id="congvan-fields" class="form-group hidden">
+                  <label>Kính gửi</label>
+                  <input type="text" id="input-kinhGui" placeholder="VD: Hiệu trưởng các trường THPT trên địa bàn tỉnh" />
+                </div>
+                <div class="form-group">
+                  <label>Tài liệu tham khảo (tùy chọn)</label>
                   <div id="upload-zone" class="upload-zone">
                     <div class="upload-icon">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                      </svg>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
                     </div>
-                    <p class="upload-text">Kéo thả file vào đây hoặc <span class="upload-browse">chọn file</span></p>
-                    <p class="upload-hint">Hỗ trợ: .docx, .doc, .txt, .pdf</p>
+                    <p class="upload-text">Kéo thả hoặc <span class="upload-browse">chọn file Word/PDF/TXT</span></p>
                     <input type="file" id="file-input" accept=".docx,.doc,.txt,.pdf" hidden />
                   </div>
                   <div id="file-info" class="file-info hidden">
                     <div class="file-info-icon">📄</div>
                     <div class="file-info-details">
                       <span id="file-name" class="file-name"></span>
-                      <span id="file-size" class="file-size"></span>
                     </div>
                     <button id="btn-remove-file" class="btn-icon" title="Xóa file">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                   </div>
-                  <div id="file-content-preview" class="file-content-preview hidden">
-                    <h4>Nội dung file tham khảo:</h4>
-                    <div id="ref-content" class="ref-content"></div>
-                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Right: Form -->
-            <div class="info-right">
-              <div class="card">
-                <div class="card-header">
-                  <h3>🏛️ Thông tin đơn vị</h3>
-                </div>
-                <div class="card-body">
-                  <div class="form-group">
-                    <label for="input-coquan-capTren">Cơ quan chủ quản (cấp trên)</label>
-                    <input type="text" id="input-coquan-capTren" placeholder="VD: UBND TỈNH BÀ RỊA - VŨNG TÀU" />
-                  </div>
-                  <div class="form-group">
-                    <label for="input-tenDonVi">Tên đơn vị ban hành <span class="required">*</span></label>
-                    <input type="text" id="input-tenDonVi" placeholder="VD: SỞ GIÁO DỤC VÀ ĐÀO TẠO" required />
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="input-soVanBan">Số văn bản</label>
-                      <input type="text" id="input-soVanBan" placeholder="VD: 123" />
-                    </div>
-                    <div class="form-group">
-                      <label for="input-kyHieu">Ký hiệu</label>
-                      <input type="text" id="input-kyHieu" placeholder="VD: KH-SGDĐT hoặc CV-SGDĐT" />
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label for="input-diaDanh">Địa danh</label>
-                    <input type="text" id="input-diaDanh" placeholder="VD: Bà Rịa - Vũng Tàu" />
-                  </div>
-                  <div class="form-group">
-                    <label for="input-ngayThang">Ngày tháng năm</label>
-                    <input type="date" id="input-ngayThang" />
-                  </div>
-                </div>
+            <div class="card">
+              <div class="card-header">
+                <h3>Yêu cầu dành cho AI</h3>
               </div>
-
-              <div class="card">
-                <div class="card-header">
-                  <h3>👤 Người ký</h3>
-                </div>
-                <div class="card-body">
-                  <div class="form-group">
-                    <label for="input-chucVu">Chức vụ người ký</label>
-                    <input type="text" id="input-chucVu" placeholder="VD: GIÁM ĐỐC" />
-                  </div>
-                  <div class="form-group">
-                    <label for="input-thuTruong">Họ và tên thủ trưởng <span class="required">*</span></label>
-                    <input type="text" id="input-thuTruong" placeholder="VD: Nguyễn Văn A" required />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="step-actions">
-            <button id="btn-next-content" class="btn btn-primary btn-lg">
-              Tiếp tục soạn nội dung
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Step 3: Content Editor & Preview -->
-      <section id="step-editor" class="step">
-        <div class="step-container step-container-wide">
-          <div class="step-header">
-            <button id="btn-back-info" class="btn-back">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Quay lại
-            </button>
-            <div class="step-badge">Bước 3</div>
-            <h2 id="step3-title">Soạn nội dung văn bản</h2>
-            <p class="step-desc">Nhập nội dung, xem trước và xuất file Word</p>
-          </div>
-
-          <div class="editor-layout">
-            <!-- Left: Editor -->
-            <div class="editor-panel">
-              <div class="card card-editor">
-                <div class="card-header">
-                  <h3>✏️ Nội dung văn bản</h3>
-                  <div class="editor-toolbar" style="gap: 8px;">
-                    <button id="btn-use-ref" class="btn btn-sm btn-outline" title="Sử dụng toàn bộ nội dung từ file tham khảo">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-                      Lấy hết từ file
-                    </button>
-                    <button id="btn-select-ref" class="btn btn-sm btn-outline btn-fill-template" title="Chọn lọc các phần nội dung từ file tham khảo">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                      Chọn lọc từ file
-                    </button>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <div class="form-group">
-                    <label for="input-trichYeu">Trích yếu nội dung <span class="required">*</span></label>
-                    <input type="text" id="input-trichYeu" placeholder="VD: V/v triển khai công tác phòng chống dịch bệnh năm 2026" />
-                  </div>
-
-                  <div id="congvan-fields" class="conditional-fields hidden">
-                    <div class="form-group">
-                      <label for="input-kinhGui">Kính gửi</label>
-                      <textarea id="input-kinhGui" rows="2" placeholder="VD: Hiệu trưởng các trường THPT trên địa bàn tỉnh"></textarea>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <div class="label-with-action">
-                      <label for="input-noiDung">Nội dung chính <span class="required">*</span></label>
-                      <button id="btn-fill-noiDung" class="btn btn-sm btn-outline btn-fill-template" title="Điền mẫu nội dung chính">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        Điền mẫu chuẩn
-                      </button>
-                    </div>
-                    <textarea id="input-noiDung" rows="16" placeholder="Nhập nội dung văn bản tại đây...&#10;&#10;Gợi ý cấu trúc Kế hoạch:&#10;I. MỤC ĐÍCH, YÊU CẦU&#10;1. Mục đích&#10;2. Yêu cầu&#10;&#10;II. NỘI DUNG&#10;&#10;III. TỔ CHỨC THỰC HIỆN"></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <div class="label-with-action">
-                      <label for="input-noiNhan">Nơi nhận</label>
-                      <button id="btn-fill-noiNhan" class="btn btn-sm btn-outline btn-fill-template" title="Điền mẫu nơi nhận">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        Điền mẫu
-                      </button>
-                    </div>
-                    <textarea id="input-noiNhan" rows="6" placeholder="Nhấn 'Điền mẫu' để tự động điền nơi nhận chuẩn"></textarea>
-                  </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label>Chỉ dẫn chi tiết (tùy chọn)</label>
+                  <textarea id="input-yeuCauAI" rows="3" placeholder="VD: Nhấn mạnh vào công tác truyền thông, bổ sung yêu cầu gửi báo cáo trước ngày 15/10..."></textarea>
                 </div>
               </div>
             </div>
 
-            <!-- Right: Preview -->
-            <div class="preview-panel">
-              <div class="card card-preview">
-                <div class="card-header">
-                  <h3>👁️ Xem trước văn bản</h3>
-                  <button id="btn-refresh-preview" class="btn btn-sm btn-outline">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                    Cập nhật
+            <div class="step-actions-footer space-between">
+              <button id="btn-back-step2" class="btn btn-ghost">Quay lại</button>
+              <button id="btn-generate-ai" class="btn btn-ai">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                Tạo nội dung AI
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Editor -->
+          <div id="step-3" class="step-pane">
+            <div class="card card-editor">
+              <div class="card-header">
+                <h3>✏️ Tinh chỉnh nội dung</h3>
+                <div class="editor-toolbar">
+                  <button id="btn-fill-noiDung" class="btn btn-sm btn-outline btn-fill-template" title="Điền mẫu có sẵn thay vì AI">
+                    Dùng Form mẫu
                   </button>
                 </div>
-                <div class="card-body preview-body">
-                  <div id="preview-doc" class="preview-doc">
-                    <div class="preview-placeholder">
-                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/>
-                      </svg>
-                      <p>Nhập nội dung để xem trước</p>
-                    </div>
-                  </div>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <textarea id="input-noiDung" rows="18" placeholder="Nội dung do AI tạo ra sẽ hiển thị ở đây. Bạn có thể chỉnh sửa trực tiếp..."></textarea>
                 </div>
+              </div>
+            </div>
+
+            <div class="step-actions-footer space-between">
+              <button id="btn-back-step3" class="btn btn-ghost">Quay lại</button>
+              <div class="export-actions">
+                <button id="btn-copy" class="btn btn-outline">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Copy nội dung
+                </button>
+                <button id="btn-export" class="btn btn-primary btn-export">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  Tải file Word
+                </button>
               </div>
             </div>
           </div>
 
-          <div class="step-actions">
-            <button id="btn-export" class="btn btn-primary btn-lg btn-export">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              Xuất file Word (.docx)
-            </button>
+        </div>
+      </div>
+
+      <!-- Right Panel: Live Preview -->
+      <div class="preview-panel">
+        <div class="preview-header">
+          <h3>Xem trước trang in</h3>
+          <button id="btn-refresh-preview" class="btn btn-sm btn-outline" title="Làm mới">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          </button>
+        </div>
+        <div class="preview-container">
+          <div class="a4-page-wrapper">
+            <div id="preview-doc" class="a4-page">
+              <div class="preview-placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/>
+                </svg>
+                <p>Điền thông tin để xem trước văn bản</p>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
     </main>
 
-    <!-- Selective Import Modal -->
-    <div id="modal-select-content" class="modal-overlay hidden">
+    <!-- Modal API Key -->
+    <div id="modal-api-key" class="modal-overlay hidden">
       <div class="modal-card animate-fade-in">
         <div class="modal-header">
-          <h3>🔍 Chọn lọc nội dung từ file</h3>
-          <button id="modal-btn-close" class="modal-close-btn" title="Đóng">&times;</button>
+          <h3>🔑 Cấu hình Google Gemini API Key</h3>
+          <button id="modal-api-close" class="modal-close-btn">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="modal-intro">Chọn các phần nội dung cần sử dụng để đưa vào editor:</p>
-          <div class="modal-toolbar">
-            <button id="modal-btn-select-all" class="btn btn-sm btn-outline">Chọn tất cả</button>
-            <button id="modal-btn-deselect-all" class="btn btn-sm btn-outline">Bỏ chọn tất cả</button>
+          <p class="modal-intro">Để sử dụng tính năng Trợ lý AI sinh văn bản tự động, bạn cần cung cấp một API Key hợp lệ từ Google Gemini.</p>
+          <div class="form-group">
+            <label>API Key</label>
+            <input type="password" id="input-api-key" placeholder="Nhập API Key bắt đầu bằng AIza..." />
+            <p class="help-text" style="font-size: 12px; color: #888; margin-top: 4px;">Key của bạn sẽ chỉ được lưu cục bộ trên trình duyệt (localStorage), cực kỳ an toàn.</p>
           </div>
-          <div id="modal-paragraphs-list" class="paragraphs-list">
-            <!-- Dynamic elements go here -->
-          </div>
+          <p><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent); font-size: 13px;">Nhấn vào đây để lấy API Key miễn phí</a></p>
         </div>
         <div class="modal-footer">
-          <button id="modal-btn-cancel" class="btn btn-ghost">Hủy</button>
-          <button id="modal-btn-apply" class="btn btn-primary">Áp dụng nội dung đã chọn</button>
+          <button id="modal-api-cancel" class="btn btn-ghost">Hủy</button>
+          <button id="modal-api-save" class="btn btn-primary">Lưu API Key</button>
         </div>
       </div>
     </div>
 
     <!-- Toast Notification -->
     <div id="toast-container" class="toast-container"></div>
-
-    <!-- Footer -->
-    <footer id="app-footer">
-      <div class="footer-inner">
-        <p>
-          <span>Made with ❤️ by</span>
-          <span class="author">Nguyễn Phi Hùng</span>
-          <span class="divider">•</span>
-          <span>Zalo:</span>
-          <a href="https://zalo.me/0938750424" target="_blank" class="zalo" rel="noopener noreferrer">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            0938750424
-          </a>
-        </p>
-      </div>
-    </footer>
   </div>
 
   <script type="module" src="/src/main.js"></script>
